@@ -254,7 +254,7 @@ component App() {
         </div>
 
         {/* Preview */}
-        <div className="w-1/2 border-l border-gray-700 flex flex-col overflow-hidden">
+        <div className="w-1/2 border-l border-gray-700 flex flex-col overflow-auto">
           <Preview code={code} showGuide={showGuide} />
         </div>
       </div>

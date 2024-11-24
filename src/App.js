@@ -1,14 +1,11 @@
-// src/App.js
 import React, { useState, useEffect } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
 import Preview from './Preview';
 
 function App() {
-  // Estado para o código
-
   const exemplos = [
     {
-      nome: 'Contador Funcional',
+      nome: '🚀 Contador Funcional',
       codigo: `component Contador() {
   state contador = 0;
 
@@ -33,7 +30,7 @@ component App() {
 }`,
     },
     {
-      nome: 'Contador',
+      nome: '🖩 Contador com Botão',
       codigo: `component Contador() {
   state contador = 0;
 
@@ -59,7 +56,7 @@ component App() {
 }`,
     },
     {
-      nome: 'Lista de Tarefas',
+      nome: '📋 Lista de Tarefas',
       codigo: `component TodoList() {
   state tarefas = [];
   ref inputRef = null;
@@ -94,7 +91,7 @@ component App() {
 }`,
     },
     {
-      nome: 'Cronômetro',
+      nome: '⏱️ Cronômetro',
       codigo: `component Cronometro() {
   state tempo = 0;
   state ativo = false;
@@ -140,40 +137,28 @@ component App() {
   ];
 
   const [code, setCode] = useState(exemplos[0].codigo);
-
-  // Estado para controlar a exibição do guia
   const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     loader.init().then((monaco) => {
       monaco.languages.register({ id: 'reactscript' });
-
       monaco.languages.setMonarchTokensProvider('reactscript', {
         tokenizer: {
           root: [
-            // Palavras-chave
             [/\b(component|state|effect|ref|return|function)\b/, 'keyword'],
-            // Números
             [/\b\d+(\.\d+)?\b/, 'number'],
-            // Strings
             [/"([^"\\]|\\.)*"/, 'string'],
             [/'([^'\\]|\\.)*'/, 'string'],
-            // Comentários
             [/\/\/.*$/, 'comment'],
             [/\/\*[\s\S]*?\*\//, 'comment'],
-            // Brackets
             [/[{}()[\]]/, '@brackets'],
-            // Operadores
             [/[-=+\/*<>!%&|^~]+/, 'operator'],
-            // Delimitadores
             [/[;,.]/, 'delimiter'],
-            // Identificadores
-            [/[A-Z][\w\$]*/, 'type.identifier'], // Nomes de componentes
+            [/[A-Z][\w\$]*/, 'type.identifier'],
             [/[a-zA-Z_$][\w$]*/, 'identifier'],
           ],
         },
       });
-
       monaco.editor.defineTheme('reactscriptDark', {
         base: 'vs-dark',
         inherit: true,
@@ -195,7 +180,6 @@ component App() {
     });
   }, []);
 
-  // Função para atualizar o código quando um exemplo é selecionado
   const handleExampleChange = (event) => {
     const selectedExample = exemplos.find((ex) => ex.nome === event.target.value);
     if (selectedExample) {
@@ -204,41 +188,39 @@ component App() {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      {/* Cabeçalho */}
-      <header className="bg-zinc-950 text-white p-4">
-        <h1 className="text-2xl font-bold">ReactScript Editor</h1>
-        {/* Títulos: Código e Preview */}
-        <div className="grid grid-cols-2 w-full mt-4">
-          <div className="flex justify-between px-4">
-            <h2 className="font-semibold">Código</h2>
-            {/* Select com exemplos */}
-            <select
-              onChange={handleExampleChange}
-              className="bg-zinc-800 text-white px-2 py-1 rounded"
-            >
-              {exemplos.map((exemplo) => (
-                <option key={exemplo.nome} value={exemplo.nome}>
-                  {exemplo.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex justify-between px-4">
-            <h2 className="font-semibold">Preview</h2>
-            <button
-              className="bg-zinc-800 hover:bg-zinc-900 text-white font-bold py-1 px-4 rounded"
-              onClick={() => setShowGuide(!showGuide)}
-            >
-              {showGuide ? 'Ocultar Guia' : 'Exibir Guia'}
-            </button>
-          </div>
+    <div className="flex flex-col h-screen overflow-hidden bg-gray-900 text-white">
+      {/* Header */}
+      <header className="bg-gray-800 shadow-lg">
+        <div className="p-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            ✨ ReactScript Playground
+          </h1>
+          <button
+            onClick={() => setShowGuide(!showGuide)}
+            className="bg-blue-700 hover:bg-blue-600 transition px-4 py-2 rounded text-white text-sm font-semibold"
+          >
+            {showGuide ? '📖 Ocultar Guia' : '📘 Exibir Guia'}
+          </button>
+        </div>
+        <div className="flex justify-between items-center px-4 py-2 bg-gray-700 border-t border-gray-600">
+          <h2 className="font-medium text-lg">🛠️ Editor de Código</h2>
+          <select
+            onChange={handleExampleChange}
+            className="bg-gray-800 text-white px-3 py-2 rounded border border-gray-600 hover:border-gray-500 transition"
+          >
+            {exemplos.map((exemplo) => (
+              <option key={exemplo.nome} value={exemplo.nome}>
+                {exemplo.nome}
+              </option>
+            ))}
+          </select>
         </div>
       </header>
-      {/* Conteúdo principal */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Editor de Código */}
-        <div className="w-1/2">
+
+      {/* Main Content */}
+      <main className="flex flex-1 overflow-hidden">
+        {/* Code Editor */}
+        <div className="w-1/2 border-r border-gray-700">
           <Editor
             height="100%"
             defaultLanguage="reactscript"
@@ -254,10 +236,17 @@ component App() {
         </div>
 
         {/* Preview */}
-        <div className="w-1/2 border-l border-gray-700 flex flex-col overflow-auto">
+        <div className="w-1/2 bg-white flex flex-col overflow-auto">
           <Preview code={code} showGuide={showGuide} />
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-center py-3 border-t border-gray-700">
+        <p className="text-sm text-gray-400">
+          🌌 Desenvolvido com 💻 e ☕ | ReactScript Playground
+        </p>
+      </footer>
     </div>
   );
 }

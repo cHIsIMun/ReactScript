@@ -1,4 +1,3 @@
-// src/Preview.js
 import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import * as Babel from 'babel-standalone';
@@ -131,7 +130,7 @@ const Preview = ({ code, showGuide }) => {
 
   if (showGuide) {
     return (
-      <div className="h-full p-4 prose prose-lg">
+      <div className="h-full p-8 prose prose-lg">
         <ReactMarkdown>{guideContent}</ReactMarkdown>
       </div>
     );

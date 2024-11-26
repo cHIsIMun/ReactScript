@@ -59,20 +59,12 @@ class ReactScriptTranspiler extends JavaScriptParserVisitor {
 
   // Visita declarações de função dentro de componentes
   visitFunctionDeclaration(ctx) {
-    const functionName = this.visit(ctx.identifier());
-    const params = ctx.formalParameterList()
-      ? this.visit(ctx.formalParameterList())
-      : '';
-    
-    let body = '';
-    if (ctx.block) {
-      body = this.visit(ctx.block);
-    } else {
-      body = ';'; // Função sem corpo
-    }
-  
-    return `function ${functionName}(${params}) ${body}`;
-  }
+    const start = ctx.start.start;
+    const stop = ctx.stop.stop;
+    const funcStr = this.input.substring(start, stop + 1);
+    this.output += funcStr + '\n'; // Adiciona a função ao output com uma quebra de linha
+    return null; // Não continua visitando os filhos da função
+  }  
 
   // Visita declarações de estado
   visitStateDeclaration(ctx) {

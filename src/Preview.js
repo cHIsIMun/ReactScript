@@ -136,7 +136,7 @@ const Preview = ({ code, showGuide }) => {
   return (
     <iframe
       ref={iframeRef}
-      className="w-full h-full bg-white"
+      className="w-full h-full bg-white font-sans"
       title="Preview"
       sandbox="allow-scripts"
     />

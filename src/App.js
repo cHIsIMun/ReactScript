@@ -167,8 +167,7 @@ component App() {
     },
     {
       nome:'📝 Notas Simples',
-      codigo: `
-      component Notas() {
+      codigo: `component Notas() {
   state notas = [];
   ref inputRef = null;
 

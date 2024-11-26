@@ -1,26 +1,26 @@
-import React, { useEffect, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import * as Babel from 'babel-standalone';
-import antlr4 from 'antlr4';
-import JavaScriptLexer from './Transpiler/Grammar/JavaScriptLexer.js';
-import JavaScriptParser from './Transpiler/Grammar/JavaScriptParser.js';
-import ReactScriptTranspiler from './Transpiler/ReactScriptTranspiler.js';
+import React, { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import * as Babel from "babel-standalone";
+import antlr4 from "antlr4";
+import JavaScriptLexer from "./Transpiler/Grammar/JavaScriptLexer.js";
+import JavaScriptParser from "./Transpiler/Grammar/JavaScriptParser.js";
+import ReactScriptTranspiler from "./Transpiler/ReactScriptTranspiler.js";
 
 const Preview = ({ code, showGuide }) => {
   const iframeRef = useRef(null);
-  const [guideContent, setGuideContent] = useState('');
+  const [guideContent, setGuideContent] = useState("");
 
   useEffect(() => {
     if (showGuide) {
       // Busca o conteúdo do guia a partir da pasta public
-      fetch('/Guide.md')
+      fetch("/Guide.md")
         .then((response) => response.text())
         .then((text) => {
           setGuideContent(text);
         })
         .catch((error) => {
-          console.error('Erro ao carregar o guia:', error);
-          setGuideContent('# Erro ao carregar o guia');
+          console.error("Erro ao carregar o guia:", error);
+          setGuideContent("# Erro ao carregar o guia");
         });
       return; // Sai antecipadamente, pois não precisamos transpilar o código
     }
@@ -28,28 +28,25 @@ const Preview = ({ code, showGuide }) => {
     const transpileCode = () => {
       try {
         // Transpilar o código ReactScript para React
-        const chars = new antlr4.InputStream(code);
-        const lexer = new JavaScriptLexer(chars);
-        const tokens = new antlr4.CommonTokenStream(lexer);
-        const parser = new JavaScriptParser(tokens);
-        const tree = parser.program();
-
-        const visitor = new ReactScriptTranspiler();
-        const out = visitor.visit(tree);
-        console.log('Transpiled React code:', out);
+        const transpiler = new ReactScriptTranspiler(code);
+        const output = transpiler.transpile();
+        console.log("Transpiled React code:", output);
 
         const codeWithReact = `
           const { useState, useEffect, useRef } = React;
-          ${out}
+          ${output}
         `;
 
         const transformedCode = Babel.transform(codeWithReact, {
-          presets: ['es2015', 'react'],
-          plugins: ['transform-object-rest-spread'],
+          presets: ["es2015", "react"],
+          plugins: ["transform-object-rest-spread"],
         }).code;
 
         // Escapa o código transformado para evitar injeção
-        const escapedCode = transformedCode.replace(/<\/script>/g, '<\\/script>');
+        const escapedCode = transformedCode.replace(
+          /<\/script>/g,
+          "<\\/script>"
+        );
 
         const html = `
 <!DOCTYPE html>
@@ -113,11 +110,11 @@ const Preview = ({ code, showGuide }) => {
         const iframe = iframeRef.current;
         iframe.srcdoc = html;
       } catch (err) {
-        console.error('Compilation Error:', err);
+        console.error("Compilation Error:", err);
         const errorHtml = `
           <div style="color: red; padding: 20px;">
             <h4>Compilation Error:</h4>
-            <pre>${err.message || err}\n${err.stack || ''}</pre>
+            <pre>${err.message || err}\n${err.stack || ""}</pre>
           </div>
         `;
         const iframe = iframeRef.current;

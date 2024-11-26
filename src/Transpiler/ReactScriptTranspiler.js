@@ -1,6 +1,7 @@
-import JavaScriptParserVisitor from './Grammar/JavaScriptParserVisitor.js';
-import JavaScriptParser from './Grammar/JavaScriptParser.js';
+import antlr4 from 'antlr4';
 import JavaScriptLexer from './Grammar/JavaScriptLexer.js';
+import JavaScriptParser from './Grammar/JavaScriptParser.js';
+import JavaScriptParserVisitor from './Grammar/JavaScriptParserVisitor.js';
 
 function toArray(maybeArray) {
   if (!maybeArray) {
@@ -12,11 +13,29 @@ function toArray(maybeArray) {
   }
 }
 
+// Função auxiliar para capitalizar strings
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 class ReactScriptTranspiler extends JavaScriptParserVisitor {
-  constructor() {
+  constructor(input) {
     super();
+    this.input = input; // Armazena o input original
     this.output = '';
     this.stateVariables = new Set();
+  }
+
+  // Método principal para transpilar o input
+  transpile() {
+    const chars = new antlr4.InputStream(this.input);
+    const lexer = new JavaScriptLexer(chars);
+    const tokens = new antlr4.CommonTokenStream(lexer);
+    const parser = new JavaScriptParser(tokens);
+    const tree = parser.program();
+
+    this.visit(tree);
+    return this.output;
   }
 
   // Visita o programa completo
@@ -44,8 +63,14 @@ class ReactScriptTranspiler extends JavaScriptParserVisitor {
     const params = ctx.formalParameterList()
       ? this.visit(ctx.formalParameterList())
       : '';
-    const body = this.visit(ctx.block());
-
+    
+    let body = '';
+    if (ctx.block) {
+      body = this.visit(ctx.block);
+    } else {
+      body = ';'; // Função sem corpo
+    }
+  
     return `function ${functionName}(${params}) ${body}`;
   }
 
@@ -119,35 +144,15 @@ class ReactScriptTranspiler extends JavaScriptParserVisitor {
 
   // Métodos para visitar diferentes tipos de expressões
   visitSingleExpression(ctx) {
-    if (ctx instanceof JavaScriptParser.IdentifierExpressionContext) {
-      return this.visitIdentifierExpression(ctx);
-    } else if (ctx instanceof JavaScriptParser.LiteralExpressionContext) {
-      return this.visitLiteralExpression(ctx);
-    } else if (ctx instanceof JavaScriptParser.MemberDotExpressionContext) {
-      return this.visitMemberDotExpression(ctx);
-    } else if (ctx instanceof JavaScriptParser.ArgumentsExpressionContext) {
-      return this.visitArgumentsExpression(ctx);
-    } else if (ctx instanceof JavaScriptParser.ArrowFunctionContext) {
-      return this.visitArrowFunction(ctx);
-    } else if (ctx instanceof JavaScriptParser.AssignmentExpressionContext) {
-      return this.visitAssignmentExpression(ctx);
-    } else if (ctx instanceof JavaScriptParser.PostIncrementExpressionContext) {
-      return this.visitPostIncrementExpression(ctx);
-    } else if (ctx instanceof JavaScriptParser.PostDecreaseExpressionContext) {
-      return this.visitPostDecreaseExpression(ctx);
-    } else if (ctx instanceof JavaScriptParser.ParenthesizedExpressionContext) {
-      return this.visitParenthesizedExpression(ctx);
-    } else if (ctx instanceof JavaScriptParser.BinaryExpressionContext) {
-      return this.visitBinaryExpression(ctx);
-    } else if (ctx instanceof JavaScriptParser.UnaryMinusExpressionContext) {
-      return this.visitUnaryMinusExpression(ctx);
-    } else if (ctx instanceof JavaScriptParser.UnaryPlusExpressionContext) {
-      return this.visitUnaryPlusExpression(ctx);
-    } else if (ctx instanceof JavaScriptParser.TernaryExpressionContext) {
-      return this.visitTernaryExpression(ctx);
-    } else {
-      return ctx.getText();
+    if (ctx.jsxElements()) {
+      // Extrai o texto exato do JSX do input original
+      const start = ctx.start.start;
+      const stop = ctx.stop.stop;
+      return this.input.substring(start, stop + 1);
     }
+    const text = this.visitChildren(ctx);
+    console.log(`Transpilando singleExpression: ${text}`);
+    return text;
   }
 
   visitIdentifierExpression(ctx) {
@@ -207,7 +212,7 @@ class ReactScriptTranspiler extends JavaScriptParserVisitor {
       return `${setter}(${expression} - 1)`;
     }
     return `${expression}--`;
-  }
+  }  
 
   visitParenthesizedExpression(ctx) {
     const expression = this.visit(ctx.expressionSequence());
@@ -241,12 +246,10 @@ class ReactScriptTranspiler extends JavaScriptParserVisitor {
   visitArrowFunction(ctx) {
     const params = this.visit(ctx.arrowFunctionParameters());
     const body = this.visit(ctx.arrowFunctionBody());
-
-    // Transformar o corpo da função arrow se necessário
-    const transformedBody = this.transformExpression(body);
-
-    return `${params} => ${transformedBody}`;
-  }
+  
+    // Não transformar o corpo da função arrow
+    return `${params} => ${body}`;
+  }  
 
   visitArrowFunctionParameters(ctx) {
     if (ctx.identifier()) {
@@ -388,27 +391,18 @@ class ReactScriptTranspiler extends JavaScriptParserVisitor {
   }
 
   // Visita elementos JSX
-  visitJsxElement(ctx, level = 1) {
-    if (ctx.jsxSelfClosingElement()) {
-      return this.visitJsxSelfClosingElement(ctx.jsxSelfClosingElement());
-    }
-    const opening = this.visit(ctx.jsxOpeningElement());
-    const children = ctx.jsxChildren()
-      ? this.visitJsxChildren(ctx.jsxChildren(), level + 1)
-      : '';
-    const closing = this.visit(ctx.jsxClosingElement());
-    const indent = '  '.repeat(level);
-
-    return `${indent}${opening}\n${children}\n${indent}${closing}`;
+  visitJsxElement(ctx) {
+    // Extrai o texto exato do JSX do input original, preservando espaços
+    const start = ctx.start.start;
+    const stop = ctx.stop.stop;
+    return this.input.substring(start, stop + 1);
   }
 
   // Visita elementos JSX auto-fechados
   visitJsxSelfClosingElement(ctx) {
-    const name = this.visit(ctx.jsxSelfClosingElementName());
-    const attributes = ctx.jsxAttributes()
-      ? ' ' + this.visit(ctx.jsxAttributes()).trim()
-      : '';
-    return `<${name}${attributes} />`;
+    const start = ctx.start.start;
+    const stop = ctx.stop.stop;
+    return this.input.substring(start, stop + 1);
   }
 
   // Nome do elemento auto-fechado
@@ -418,32 +412,32 @@ class ReactScriptTranspiler extends JavaScriptParserVisitor {
 
   // Visita elementos de abertura JSX
   visitJsxOpeningElement(ctx) {
-    const name = this.visit(ctx.jsxOpeningElementName());
-    const attributes = ctx.jsxAttributes()
-      ? ' ' + this.visit(ctx.jsxAttributes()).trim()
-      : '';
-    return `<${name}${attributes}>`;
+    const start = ctx.start.start;
+    const stop = ctx.stop.stop;
+    return this.input.substring(start, stop + 1);
   }
 
   // Visita elementos de fechamento JSX
   visitJsxClosingElement(ctx) {
-    const name = this.visit(ctx.jsxClosingElementName());
-    return `</${name}>`;
+    const start = ctx.start.start;
+    const stop = ctx.stop.stop;
+    return this.input.substring(start, stop + 1);
   }
 
   // Visita atributos JSX
   visitJsxAttributes(ctx) {
-    const attrs = toArray(ctx.jsxAttribute());
-    return attrs.map((attr) => this.visit(attr)).join(' ');
+    // Preserva os atributos com espaços adequados
+    const start = ctx.start.start;
+    const stop = ctx.stop.stop;
+    return this.input.substring(start, stop + 1);
   }
 
   // Visita um único atributo JSX
   visitJsxAttribute(ctx) {
-    const name = this.visit(ctx.jsxAttributeName());
-    const value = ctx.jsxAttributeValue()
-      ? `=${this.visit(ctx.jsxAttributeValue())}`
-      : '';
-    return `${name}${value}`;
+    // Preserva o atributo como está
+    const start = ctx.start.start;
+    const stop = ctx.stop.stop;
+    return this.input.substring(start, stop + 1);
   }
 
   // Nome do atributo JSX
@@ -453,29 +447,15 @@ class ReactScriptTranspiler extends JavaScriptParserVisitor {
 
   // Valor do atributo JSX
   visitJsxAttributeValue(ctx) {
-    const stringLiteral = ctx.getToken(JavaScriptParser.StringLiteral, 0);
-    if (stringLiteral) {
-      return stringLiteral.getText();
-    } else if (ctx.jsxElement()) {
-      return `{${this.visit(ctx.jsxElement())}}`;
-    } else if (ctx.objectExpressionSequence()) {
-      const expression = this.visit(ctx.objectExpressionSequence());
-      return `{${this.transformExpression(expression)}}`;
-    } else if (ctx.arrowFunction()) {
-      // Exemplo: () => contador++
-      const arrowFunc = this.visit(ctx.arrowFunction());
-      // Transformar a expressão dentro da função arrow
-      const transformedArrowFunc = arrowFunc.replace(/(\w+)\s*\+\+/, (match, p1) => {
-        if (this.isStateVariable(p1)) {
-          const setter = `set${capitalize(p1)}`;
-          return `${setter}(${p1} + 1)`;
-        }
-        return match;
-      });
-      return `{${transformedArrowFunc}}`;
-    } else {
-      return ctx.getText();
-    }
+    return ctx.getText();
+  }
+
+  // Visita os filhos de JSX
+  visitJsxChildren(ctx) {
+    // Preserva os filhos do JSX como estão
+    const start = ctx.start.start;
+    const stop = ctx.stop.stop;
+    return this.input.substring(start, stop + 1);
   }
 
   // Transformação de expressões incrementais/decrementais
@@ -486,41 +466,6 @@ class ReactScriptTranspiler extends JavaScriptParserVisitor {
       return this.transformDecrement(expression);
     }
     return expression;
-  }
-
-  // Visita os filhos de elementos JSX
-  visitJsxChildren(ctx, level = 1) {
-    const children = toArray(ctx.children);
-    const indent = '  '.repeat(level);
-
-    return children
-      .map((child) => {
-        if (!child) return ''; // Nó inválido
-
-        // Verificar o tipo do filho
-        const constructorName = child.constructor.name;
-        
-        if (constructorName === 'HtmlChardataContext' || constructorName === 'JsxTextContext') {
-          const text = child.getText().trim();
-          if (text) {
-            return `${indent}${text}`;
-          }
-          return '';
-        }
-
-        if (constructorName === 'ObjectExpressionSequenceContext') {
-          const expression = this.visit(child.expressionSequence());
-          return `${indent}{${expression}}`;
-        }
-
-        if (constructorName === 'JsxElementContext') {
-          return this.visitJsxElement(child, level);
-        }
-
-        return ''; // Ignorar outros tipos de nós
-      })
-      .filter(line => line !== '') // Remover linhas vazias
-      .join('\n');
   }
 
   // Transforma expressões incrementais
@@ -568,9 +513,5 @@ class ReactScriptTranspiler extends JavaScriptParserVisitor {
   }
 }
 
-// Função auxiliar para capitalizar strings
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
 
 export default ReactScriptTranspiler;

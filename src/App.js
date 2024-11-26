@@ -5,31 +5,6 @@ import Preview from './Preview';
 function App() {
   const exemplos = [
     {
-      nome: '🚀 Contador Funcional',
-      codigo: `component Contador() {
-  state contador = 0;
-
-  effect [contador] {
-    console.log("Contador atualizado:", contador);
-  }
-
-  return (
-    <div>
-      <h1>Contador: {contador}</h1>
-    </div>
-  );
-}
-
-component App() {
-  return (
-    <div>
-      <h1>Exemplo de Contador</h1>
-      <Contador />
-    </div>
-  );
-}`,
-    },
-    {
       nome: '🖩 Contador com Botão',
       codigo: `component Contador() {
   state contador = 0;
@@ -41,7 +16,7 @@ component App() {
   return (
     <div>
       <h1>Contador: {contador}</h1>
-      <button onClick={() => contador++}>Incrementar</button>
+      <button onClick={() => setContador(contador + 1)}>Incrementar</button>
     </div>
   );
 }
@@ -63,7 +38,7 @@ component App() {
 
   function adicionarTarefa() {
     if (inputRef.value) {
-      tarefas.push(inputRef.value);
+      setTarefas([...tarefas, inputRef.value]);
       inputRef.value = '';
     }
   }
@@ -99,20 +74,20 @@ component App() {
 
   function iniciar() {
     if (!ativo) {
-      ativo = true;
-      intervalId = setInterval(() => tempo++, 1000);
+      setAtivo(true);
+      intervalId = setInterval(() => setTempo(tempo + 1), 1000);
     }
   }
 
   function pausar() {
     if (ativo) {
-      ativo = false;
+      setAtivo(false);
       clearInterval(intervalId);
     }
   }
 
   function resetar() {
-    tempo = 0;
+    setTempo(0);
     pausar();
   }
 
